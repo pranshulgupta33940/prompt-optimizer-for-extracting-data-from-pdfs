@@ -1,4 +1,4 @@
-# ⚡ LLM Calling LLM: Automated Prompt Optimizer for Structured Extraction
+#  LLM Calling LLM: Automated Prompt Optimizer for Structured Extraction
 
 [![Build Status](https://img.shields.io/badge/tests-62%20passed-brightgreen.svg?style=flat-square)](https://github.com/pranshulgupta33940/llm-calling-llm)
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg?style=flat-square)](https://python.org)
@@ -10,7 +10,7 @@ An agentic, production-grade prompt optimization system that automatically refin
 
 ---
 
-## 🏗️ How it Works
+##  How it Works
 
 The optimizer starts with a **Seed Prompt**, loads the PDF documents, parses the JSON target schema, and executes a feedback loop using two LLM providers (Google Gemini & Groq/Llama) and a mathematical scoring layer.
 
@@ -50,17 +50,17 @@ graph TD
 
 ---
 
-## 🌟 Key Features
+## Imporant things to be noted about this :-
 
-*   **⚡ Dual-LLM Architecture**: High-speed, zero-cost PDF extraction using **Gemini 2.5 Flash** (via native PDF uploads in Google AI Studio) coupled with mutation and grading using **Groq (Llama 3.1 8B)**.
-*   **🧬 Bipartite Hungarian Alignment**: Employs globally optimal linear sum assignment (Hungarian algorithm) to match list/array items deterministically, handling out-of-order extractions and list size mismatches.
-*   **💾 High-Performance Caching**: Disk-backed SQLite caches for both PDF Extractions and LLM scoring grades ensure no redundant network calls are made. 
-*   **🛡️ Multi-Dimensional Budget Controls**: Enforces limits on total API cost ($ USD), token consumption, max iterations, and wall-clock execution time. Supports graceful shutdown and resumability.
-*   **📊 Automatic Observability Reports**: Generates detailed markdown reports displaying the prompt evolution curves, detailed validation/test score metrics, and unified diffs of prompt revisions.
+Dual-LLM Setup: Fast and free PDF extraction using Gemini 2.5 Flash through native PDF uploads in Google AI Studio, combined with grading and mutation using Groq (Llama 3.1 8B).
+Smart Item Alignment: Uses the Hungarian algorithm to accurately match list and array items, even when outputs are unordered or list sizes differ.
+Efficient Caching System: SQLite-based disk caching for PDF extractions and LLM grading results to prevent repeated API calls and improve performance.
+Advanced Budget Controls: Supports limits on API cost, token usage, execution time, and iteration count, with graceful shutdown and resumability.
+Automatic Reporting: Generates detailed markdown reports with prompt evolution tracking, validation/test metrics, and prompt revision diffs.
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Clone & Set Up environment
 
@@ -108,7 +108,7 @@ python -m pytest tests/ -v
 
 ---
 
-## 📊 Sample Optimization Report
+## Sample Optimization Report
 
 During the test execution on the `academic/research` schema, the optimizer refined the seed prompt over 5 iterations, producing the following gains:
 
@@ -154,7 +154,7 @@ During the test execution on the `academic/research` schema, the optimizer refin
 
 ---
 
-## 🛠️ Extensible Evaluation Metrics
+##  Extensible Evaluation Metrics
 
 The system resolves nested `$ref` properties in JSON schemas and extracts evaluation configs corresponding to standard and customized metrics:
 
@@ -172,7 +172,7 @@ The system resolves nested `$ref` properties in JSON schemas and extracts evalua
 
 ---
 
-## 📂 Repository Layout
+##  Repository Layout
 
 *   `/prompt_optimizer/config/` - YAML files defining model configurations, dataset directories, and run settings.
 *   `/prompt_optimizer/src/data/` - Handles deterministic data loader, split generator, and schema parser.
@@ -183,7 +183,3 @@ The system resolves nested `$ref` properties in JSON schemas and extracts evalua
 *   `/prompt_optimizer/tests/` - pytest suite containing 62 robust test specifications.
 
 ---
-
-## 📄 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
