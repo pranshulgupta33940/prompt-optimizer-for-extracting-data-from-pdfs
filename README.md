@@ -16,39 +16,8 @@ The optimizer starts with a **Seed Prompt**, loads the PDF documents, parses the
 
 ```mermaid
 graph TD
-    subgraph Input Layer
-        Seed[Seed Prompt] --> Loop
-        Schema[JSON Schema] --> Parser[Schema Parser]
-        PDFs[PDF Documents] --> Loader[Data Split Loader]
-    end
-
-    subgraph Optimization Loop
-        Loop{Optimizer Loop}
-        Loop -->|Get Candidate| Mutator[LLM Mutator: Llama 3.1 8B]
-        Mutator -->|Propose Prompt| Evaluator[PDF Extractor: Gemini 2.5 Flash]
-        Loader -->|Documents| Evaluator
-        Evaluator -->|Extract JSON| Scorer[Structured Scorer]
-        Parser -->|Metrics config| Scorer
-        Scorer -->|Compute Score| Alignment[Hungarian Array Alignment]
-        Alignment -->|Deterministic Match| Loop
-        Loop -->|If Improved| Accept[Accept & Update Best]
-        Loop -->|If Stalled| Diversify[Diversify Search]
-        Loop -->|Enforce| Budget[Budget Tracker]
-    end
-
-    subgraph Output Layer
-        Accept --> Final[Final Optimized Prompt]
-        Budget --> Final
-        Final --> Report[Markdown Performance Report]
-    end
-
-    style Input Layer fill:#f5f7fa,stroke:#cbd5e1,stroke-width:1px
-    style Optimization Loop fill:#ecfdf5,stroke:#a7f3d0,stroke-width:1px
-    style Output Layer fill:#fff7ed,stroke:#fed7aa,stroke-width:1px
-    style Loop fill:#3b82f6,stroke:#1d4ed8,color:#fff
+...
 ```
-
----
 
 ## Imporant things to be noted about this :-
 
