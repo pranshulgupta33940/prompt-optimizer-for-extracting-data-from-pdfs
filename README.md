@@ -1,4 +1,4 @@
-#  LLM Calling LLM: Automated Prompt Optimizer for Structured Extraction
+# Automated Prompt Optimizer for Structured Extraction
 
 [![Build Status](https://img.shields.io/badge/tests-62%20passed-brightgreen.svg?style=flat-square)](https://github.com/pranshulgupta33940/llm-calling-llm)
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg?style=flat-square)](https://python.org)
