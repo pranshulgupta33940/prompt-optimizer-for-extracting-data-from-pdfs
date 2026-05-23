@@ -137,3 +137,6 @@ run_state/
 outputs/
 logs/
 .env.local
+prompt_optimizer/runs/
+runs/
+

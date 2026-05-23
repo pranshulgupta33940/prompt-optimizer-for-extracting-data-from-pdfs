@@ -197,6 +197,6 @@ The `--dry-run` flag limits each split to 2 documents for near-zero cost testing
 
 | Role | Provider | Model | Free Tier |
 |------|----------|-------|-----------|
-| PDF Extraction | Google AI Studio | gemini-1.5-flash | ✓ (no credit card) |
+| PDF Extraction | Google AI Studio | gemini-2.5-flash | ✓ (no credit card) |
 | Prompt Mutation | Groq | llama-3.1-8b-instant | ✓ (no credit card) |
 | Scoring Judge | Groq | llama-3.1-8b-instant | ✓ (no credit card) |
