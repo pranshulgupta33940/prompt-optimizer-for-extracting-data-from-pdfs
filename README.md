@@ -15,33 +15,31 @@ An agentic, production-grade prompt optimization system that automatically refin
 The optimizer starts with a **Seed Prompt**, loads the PDF documents, parses the JSON target schema, and executes a feedback loop using two LLM providers (Google Gemini & Groq/Llama) and a mathematical scoring layer.
 
 ```mermaid
-```mermaid
 graph TD
-    subgraph IL["📥 Input Layer"]
-        A[PDF Documents\nExtractBench Dataset]
-        B[JSON Schema\nMetric config per field]
-        C[Seed Prompt\nFrom YAML config]
+    subgraph IL["Input Layer"]
+        A["PDF Documents - ExtractBench Dataset"]
+        B["JSON Schema - Metric config per field"]
+        C["Seed Prompt - From YAML config"]
     end
 
-    subgraph OL["⚙️ Optimization Loop"]
-        LOOP["🔵 Optimizer Loop\nGreedy accept / reject"]
-        MUT["LLM Mutator\nGroq · Llama 3.1 8B"]
-        EXT["PDF Extractor\nGemini 1.5 Flash"]
-        SCO["Structured Scorer\nPer-field P / R / F1"]
-        ALI["Array Alignment\nHungarian Algorithm"]
-        BUD["Budget Tracker\nIter · tokens · cost · time"]
-        DIV["Diversify Search\nAfter 3 stalled iters"]
+    subgraph OL["Optimization Loop"]
+        LOOP["Optimizer Loop - Greedy accept / reject"]
+        MUT["LLM Mutator - Groq Llama 3.1 8B"]
+        EXT["PDF Extractor - Gemini 1.5 Flash"]
+        SCO["Structured Scorer - Per-field P / R / F1"]
+        ALI["Array Alignment - Hungarian Algorithm"]
+        BUD["Budget Tracker - Iter / tokens / cost / time"]
+        DIV["Diversify Search - After 3 stalled iters"]
     end
 
-    subgraph OOL["📤 Output Layer"]
-        FIN["Final Optimized Prompt\nBest val-split score"]
-        REP["Performance Report\nScore curve · diff · REPORT.md"]
+    subgraph OOL["Output Layer"]
+        FIN["Final Optimized Prompt - Best val-split score"]
+        REP["Performance Report - Score curve and REPORT.md"]
     end
 
     A -->|documents| EXT
     B -->|metrics config| SCO
     C -->|seed| LOOP
-
     LOOP -->|propose| MUT
     MUT -->|new prompt| EXT
     EXT -->|extracted JSON| SCO
@@ -50,13 +48,9 @@ graph TD
     BUD -->|enforce| LOOP
     LOOP -.->|stall detected| DIV
     DIV -.->|re-inject| MUT
-
     LOOP -->|best prompt| FIN
     LOOP -->|trajectory| REP
 
-    style IL fill:#f0fdf4,stroke:#86efac,stroke-width:1px
-    style OL fill:#eff6ff,stroke:#93c5fd,stroke-width:1px
-    style OOL fill:#fdf4ff,stroke:#d8b4fe,stroke-width:1px
     style LOOP fill:#3b82f6,stroke:#1d4ed8,color:#ffffff
     style MUT fill:#7c3aed,stroke:#5b21b6,color:#ffffff
     style EXT fill:#1d4ed8,stroke:#1e3a8a,color:#ffffff
@@ -66,7 +60,6 @@ graph TD
     style BUD fill:#374151,stroke:#1f2937,color:#ffffff
     style FIN fill:#166534,stroke:#14532d,color:#ffffff
     style REP fill:#166534,stroke:#14532d,color:#ffffff
-```
 ```
 
 ## Imporant things to be noted about this :-
