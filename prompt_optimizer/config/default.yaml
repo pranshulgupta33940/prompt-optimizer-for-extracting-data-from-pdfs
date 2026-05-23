@@ -1,0 +1,64 @@
+dataset:
+  path: "../extract-bench/dataset"
+  schema: "academic/research"
+  split_seed: 42
+  split_ratios: [0.7, 0.15, 0.15]
+
+seed_prompt: |
+  You are a precise document extraction system. Your task is to extract
+  structured information from the provided PDF document according to the
+  JSON schema below.
+
+  RULES:
+  - Return ONLY a valid JSON object that matches the schema structure exactly.
+  - Extract ALL fields present in the document. Use null for missing fields.
+  - For array fields, include EVERY matching item found in the document.
+  - Be thorough and accurate. Do NOT fabricate information absent from the document.
+  - Follow the field descriptions in the schema carefully.
+  - For numeric values, extract the exact numbers as they appear.
+  - For names and titles, preserve exact spelling and formatting.
+
+  JSON SCHEMA:
+  {schema}
+
+  Respond with ONLY the JSON object. No explanation, no markdown fencing.
+
+extraction_llm:
+  provider: "gemini"
+  model: "gemini-2.0-flash"
+  api_key_env: "GOOGLE_API_KEY"
+  temperature: 0
+  max_output_tokens: 8192
+
+mutation_llm:
+  provider: "groq"
+  model: "llama-3.1-8b-instant"
+  api_key_env: "GROQ_API_KEY"
+  temperature: 0.7
+  max_output_tokens: 4096
+
+scoring_llm:
+  provider: "groq"
+  model: "llama-3.1-8b-instant"
+  api_key_env: "GROQ_API_KEY"
+  temperature: 0
+  max_output_tokens: 2048
+
+budget:
+  max_iterations: 5
+  max_tokens: 100000
+  max_cost_usd: 0.50
+  max_wall_clock_seconds: 1200
+
+optimizer:
+  stall_threshold: 3
+  duplicate_similarity_threshold: 0.95
+  overfitting_check_interval: 3
+  overfitting_gap_threshold: 0.1
+
+output:
+  run_dir: "../runs"
+
+dry_run:
+  enabled: false
+  docs_per_split: 2
