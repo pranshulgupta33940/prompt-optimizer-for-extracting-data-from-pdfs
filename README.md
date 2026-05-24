@@ -1,10 +1,5 @@
 # Automated Prompt Optimizer for Structured Extraction
 
-[![Build Status](https://img.shields.io/badge/tests-62%20passed-brightgreen.svg?style=flat-square)](https://github.com/pranshulgupta33940/llm-calling-llm)
-[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg?style=flat-square)](https://python.org)
-[![Gemini](https://img.shields.io/badge/Extraction%20LLM-Gemini%202.5%20Flash-orange.svg?style=flat-square)](https://aistudio.google.com)
-[![Groq](https://img.shields.io/badge/Mutation%20%2F%20Judge-Groq%20Llama%203.1-violet.svg?style=flat-square)](https://console.groq.com)
-[![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](LICENSE)
 
 An agentic, production-grade prompt optimization system that automatically refines LLM prompts to maximize the quality of structured JSON extraction from complex PDF documents. Operating under multi-resource budgets (cost, time, tokens, iterations), the system runs a greedy hill-climbing optimization loop with stall-detection and diversification.
 
