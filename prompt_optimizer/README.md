@@ -39,6 +39,7 @@ $env:GOOGLE_API_KEY_2 = "your-second-google-key"
 $env:GOOGLE_API_KEY_3 = "your-third-google-key"
 $env:GOOGLE_API_KEY_4 = "your-fourth-google-key"
 ```
+
 The system automatically rotates to the next key when 
 the free tier daily quota (20 requests/day) is exhausted.
 A single key is sufficient for dry runs and short runs
@@ -51,16 +52,16 @@ git clone --depth 1 https://github.com/ContextualAI/extract-bench.git
 
 ### 5. Run
 ```bash
-# Full run — academic/research schema (default)
-python -m src.main --config config/default.yaml
-
 # Dry run — 2 docs per split, near-zero cost, tests pipeline
 python -m src.main --config config/default.yaml --dry-run
 
-# Finance/credit_agreement schema
+# Full run — academic/research schema
+python -m src.main --config config/default.yaml
+
+# Full run — finance/credit_agreement schema
 python -m src.main --config config/alternate_schema.yaml
 
-# Hiring/resume schema
+# Full run — hiring/resume schema
 python -m src.main --config config/hiring_resume.yaml
 
 # Any custom schema — copy a config and change dataset.schema
@@ -75,7 +76,6 @@ pytest tests/ -v
 ---
 
 ## Architecture
-```
 prompt_optimizer/
 ├── config/
 │   ├── default.yaml           # academic/research schema
@@ -109,7 +109,6 @@ prompt_optimizer/
 ├── pyproject.toml
 ├── README.md
 └── REPORT.md                  # Auto-generated after each run
-```
 
 ---
 
@@ -126,9 +125,9 @@ cp config/default.yaml config/my_schema.yaml
 2. Edit `config/my_schema.yaml`:
 ```yaml
 dataset:
-  schema: "finance/10kq"   # change this
+  schema: "finance/10kq"
 seed_prompt: |
-  You are an expert analyst...  # change this
+  You are an expert analyst...
 ```
 
 3. Run:
@@ -171,10 +170,11 @@ identical splits.
 Finds the globally optimal one-to-one assignment between 
 predicted and gold array items. Superior to greedy or 
 positional matching because:
+
 - Handles reordered arrays correctly
-- Finds the best possible alignment, not just locally good
+- Finds the best possible alignment not just locally good
 - Fully deterministic — same input always gives same result
-- Time complexity O(n³), acceptable for typical array sizes
+- Time complexity O(n³) acceptable for typical array sizes
 
 For arrays of objects: pairwise similarity is the average 
 field score across all evaluation-config fields.
@@ -202,25 +202,26 @@ For arrays of primitives: fuzzy string matching is used.
 
 **Greedy hill-climbing with stall detection:**
 
-1. Evaluate seed prompt on validation split → baseline
-2. For each iteration (until budget exhausted):
-   a. Mutator LLM proposes an improved prompt
-   b. Evaluate candidate on validation split
-   c. Accept if score improves, reject otherwise
-   d. After 3 consecutive rejections → diversification mode
-   e. Skip duplicate prompts (hash + similarity check)
-   f. Every 3 iterations → check val vs test gap
-      (overfitting detection)
-3. Evaluate best prompt on held-out test split
-4. Generate REPORT.md with full trajectory
+Evaluate seed prompt on validation split → baseline
+For each iteration until budget exhausted:
+a. Mutator LLM proposes an improved prompt
+b. Evaluate candidate on validation split
+c. Accept if score improves, reject otherwise
+d. After 3 consecutive rejections → diversification mode
+e. Skip duplicate prompts via hash + similarity check
+f. Every 3 iterations → check val vs test gap
+Evaluate best prompt on held-out test split
+Generate REPORT.md with full trajectory
 
 
 **Pathological case handling:**
-- Regression → reject, log reason, keep current best
-- Stall → diversification mode, instruct mutator to try
-  fundamentally different approach
-- Duplicate prompt → skip via SHA-256 hash check
-- Overfitting → warn when val/test gap exceeds threshold
+
+| Case | Handling |
+|------|----------|
+| Regression | Reject, log reason, keep current best |
+| Stall (3 rejections) | Diversification mode — instruct mutator to try fundamentally different approach |
+| Duplicate prompt | Skip via SHA-256 hash check |
+| Overfitting | Warn when val/test gap exceeds threshold |
 
 ---
 
@@ -249,7 +250,7 @@ budget:
   max_wall_clock_seconds: 5400
 ```
 
-`--dry-run` flag limits to 2 docs per split for 
+`--dry-run` limits to 2 docs per split for 
 near-zero cost pipeline testing.
 
 ---
@@ -284,23 +285,13 @@ near-zero cost pipeline testing.
 ## Observability
 
 Every run produces in `runs/<schema>/<run_id>/`:
-```
-run_state.json      — full iteration history + state
-llm_calls.jsonl     — every LLM call with input, output,
-                      tokens, cost, latency
-extraction_cache.db — cached PDF extractions
-metric_cache.db     — cached stochastic metric scores
-REPORT.md           — human readable report with score
-                      curve, prompt diff, regression analysis
-```
-
-View prompt diff between any two iterations:
-```bash
-python -c "
-from src.observability.diff import show_diff
-show_diff('runs/academic_research/<run_id>', 0, 4)
-"
-```
+run_state.json       — full iteration history and state
+llm_calls.jsonl      — every LLM call with input, output,
+tokens, cost, latency
+extraction_cache.db  — cached PDF extractions
+metric_cache.db      — cached stochastic metric scores
+REPORT.md            — score curve, prompt diff,
+regression analysis
 
 ---
 
@@ -315,5 +306,3 @@ show_diff('runs/academic_research/<run_id>', 0, 4)
    better mutations.
 4. Greedy hill-climbing may miss global optimum.
    Population-based search would explore more broadly.
-5. sport/swimming and finance/10kq schemas not run
-   due to API quota constraints during development.
