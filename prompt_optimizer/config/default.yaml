@@ -2,33 +2,46 @@ dataset:
   path: "../extract-bench/dataset"
   schema: "academic/research"
   split_seed: 42
-  split_ratios: [0.7, 0.15, 0.15]
+  split_ratios: [0.50, 0.25, 0.25]  # was [0.70, 0.15, 0.15]
 
 seed_prompt: |
-  You are a precise document extraction system. Your task is to extract
-  structured information from the provided PDF document according to the
-  JSON schema below.
+  You are a precise document extraction system. Extract 
+  structured information from the provided PDF document 
+  according to the JSON schema below.
 
-  RULES:
-  - Return ONLY a valid JSON object that matches the schema structure exactly.
-  - Extract ALL fields present in the document. Use null for missing fields.
-  - For array fields, include EVERY matching item found in the document.
-  - Be thorough and accurate. Do NOT fabricate information absent from the document.
-  - Follow the field descriptions in the schema carefully.
-  - For numeric values, extract the exact numbers as they appear.
-  - For names and titles, preserve exact spelling and formatting.
+  EXTRACTION RULES:
+  - Return ONLY a valid JSON object matching the schema exactly
+  - Extract ALL fields present in the document
+  - Use null for fields not found in the document
+  - For arrays, include EVERY matching item — do not truncate
+  - Never fabricate or infer information not in the document
+  - For numeric values, extract exact numbers as they appear
+  - For names, preserve exact spelling and capitalization
+  - For dates, use the format specified in the schema
+  - For string fields, extract verbatim unless schema says otherwise
+
+  HANDLING EDGE CASES:
+  - If a field appears multiple times, use the first occurrence
+    unless the schema specifies otherwise
+  - If formatting varies (hyphens, spaces, abbreviations),
+    preserve exactly as written in the document
+  - For nested objects, extract each sub-field independently
+  - For boolean fields, extract true/false only — no other values
+  - If a section is missing from the document, set all its 
+    fields to null
 
   JSON SCHEMA:
   {schema}
 
-  Respond with ONLY the JSON object. No explanation, no markdown fencing.
+  Respond with ONLY the JSON object.
+  No explanation. No markdown fencing. No extra text.
 
 extraction_llm:
   provider: "gemini"
   model: "gemini-2.5-flash"
   api_key_env: "GOOGLE_API_KEY"
   temperature: 0
-  max_output_tokens: 8192
+  max_output_tokens: 32768
 
 mutation_llm:
   provider: "groq"
@@ -45,15 +58,15 @@ scoring_llm:
   max_output_tokens: 2048
 
 budget:
-  max_iterations: 5
-  max_tokens: 100000
-  max_cost_usd: 0.50
-  max_wall_clock_seconds: 1200
+  max_iterations: 15
+  max_tokens: 500000
+  max_cost_usd: 1.00
+  max_wall_clock_seconds: 5400
 
 optimizer:
   stall_threshold: 3
   duplicate_similarity_threshold: 0.95
-  overfitting_check_interval: 3
+  overfitting_check_interval: 1
   overfitting_gap_threshold: 0.1
 
 output:

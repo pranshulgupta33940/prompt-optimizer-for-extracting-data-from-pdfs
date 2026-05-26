@@ -1,35 +1,25 @@
 dataset:
   path: "../extract-bench/dataset"
-  schema: "finance/credit_agreement"
+  schema: "hiring/resume"
   split_seed: 42
   split_ratios: [0.60, 0.20, 0.20]
 
 seed_prompt: |
-  You are an expert legal and financial document analyst.
-  Extract key terms and party information from the provided
-  credit agreement PDF according to the JSON schema below.
-
+  You are an expert HR document analyst. Extract
+  structured information from the provided resume
+  PDF according to the JSON schema below.
+  
   EXTRACTION RULES:
-  - Return ONLY a valid JSON object matching the schema exactly
+  - Return ONLY a valid JSON object matching schema
   - Extract ALL fields present in the document
-  - Use null for fields not found in the document
-  - For arrays, include EVERY matching item found
-  - Never fabricate or infer information not in the document
-  - Preserve exact legal entity names as written
-  - For monetary amounts, extract numeric value only
-  - For dates, use ISO 8601 format (YYYY-MM-DD)
-  - For boolean fields, use true or false only
-
-  EDGE CASE RULES:
-  - If a field appears multiple times, use the first occurrence
-  - If formatting varies, preserve exactly as written
-  - For nested objects, extract each sub-field independently
-  - If a section is missing, set all its fields to null
-  - For large arrays, extract ALL items completely
-
+  - Use null for fields not found
+  - For arrays include EVERY item found
+  - Never fabricate information
+  - Preserve exact names and dates as written
+  
   JSON SCHEMA:
   {schema}
-
+  
   Respond with ONLY the JSON object.
   No explanation. No markdown. No extra text.
 

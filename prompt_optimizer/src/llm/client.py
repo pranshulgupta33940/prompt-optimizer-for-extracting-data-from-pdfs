@@ -5,7 +5,6 @@ Supported providers:
 * **Groq** (free tier, Llama 3.1 8B) — text-only mutation and scoring.
 """
 
-import base64
 import json
 import os
 import re
@@ -70,17 +69,34 @@ class LLMClient(ABC):
 # ---------------------------------------------------------------------------
 
 class GeminiClient(LLMClient):
-    """Google Gemini client via ``google-generativeai`` SDK."""
+    """Google Gemini client via ``google-genai`` SDK."""
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.provider = "gemini"
+        from google import genai
+        from google.genai import types
+        self._client = genai.Client(api_key=self.api_key)
+        self._types = types
+        self._current_key_idx = 0
 
-        import google.generativeai as genai
-
-        genai.configure(api_key=self.api_key)
-        self._genai = genai
-        self._model = genai.GenerativeModel(self.model)
+    def _rotate_key(self) -> None:
+        """Rotate to the next available API key in GOOGLE_API_KEY, GOOGLE_API_KEY_2, GOOGLE_API_KEY_3, GOOGLE_API_KEY_4."""
+        from google import genai
+        keys = [
+            os.environ.get("GOOGLE_API_KEY"),
+            os.environ.get("GOOGLE_API_KEY_2"),
+            os.environ.get("GOOGLE_API_KEY_3"),
+            os.environ.get("GOOGLE_API_KEY_4")
+        ]
+        keys = [k for k in keys if k]
+        if len(keys) <= 1:
+            return
+        self._current_key_idx = (self._current_key_idx + 1) % len(keys)
+        next_key = keys[self._current_key_idx]
+        self.api_key = next_key
+        self._client = genai.Client(api_key=next_key)
+        print(f"  [INFO] Rotated Gemini API key to key index {self._current_key_idx + 1}")
 
     @retry(
         stop=stop_after_attempt(3),
@@ -89,31 +105,33 @@ class GeminiClient(LLMClient):
         reraise=True,
     )
     def extract(self, prompt: str, pdf_path: Path) -> dict:
-        """Upload a PDF to Gemini and extract structured JSON.
-
-        Args:
-            prompt: The extraction prompt (with schema embedded).
-            pdf_path: Path to the source PDF file.
-
-        Returns:
-            Parsed JSON dict from the model's response.
-        """
+        """Upload a PDF to Gemini and extract structured JSON."""
         start = time.time()
         error_msg: str | None = None
-
+        raw_text = ""
+        response = None
         try:
-            uploaded = self._genai.upload_file(str(pdf_path))
-            response = self._model.generate_content(
-                [uploaded, prompt],
-                generation_config=self._genai.types.GenerationConfig(
+            pdf_bytes = Path(pdf_path).read_bytes()
+            response = self._client.models.generate_content(
+                model=self.model,
+                contents=[
+                    self._types.Part.from_bytes(
+                        data=pdf_bytes,
+                        mime_type="application/pdf",
+                    ),
+                    prompt,
+                ],
+                config=self._types.GenerateContentConfig(
                     temperature=self.temperature,
                     max_output_tokens=self.max_output_tokens,
                 ),
             )
             raw_text = response.text
-            result = _parse_json(raw_text)
+            result = _parse_json_safe(raw_text)
             return result
         except Exception as exc:
+            if "429" in str(exc) or "quota" in str(exc).lower() or "limit" in str(exc).lower():
+                self._rotate_key()
             error_msg = str(exc)
             raise
         finally:
@@ -121,11 +139,11 @@ class GeminiClient(LLMClient):
             self._log_call(
                 call_type="extract",
                 prompt=prompt[:500],
-                output=raw_text if error_msg is None else "",
+                output=raw_text,
                 latency=latency,
                 error=error_msg,
                 has_pdf=True,
-                response=response if error_msg is None else None,
+                response=response,
             )
 
     @retry(
@@ -135,24 +153,17 @@ class GeminiClient(LLMClient):
         reraise=True,
     )
     def generate(self, system_prompt: str, user_prompt: str) -> str:
-        """Text-only generation via Gemini.
-
-        Args:
-            system_prompt: System-level instructions.
-            user_prompt: The user's message.
-
-        Returns:
-            The model's text response.
-        """
+        """Text-only generation via Gemini."""
         start = time.time()
         error_msg: str | None = None
         raw_text = ""
-
+        response = None
         try:
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
-            response = self._model.generate_content(
-                full_prompt,
-                generation_config=self._genai.types.GenerationConfig(
+            response = self._client.models.generate_content(
+                model=self.model,
+                contents=full_prompt,
+                config=self._types.GenerateContentConfig(
                     temperature=self.temperature,
                     max_output_tokens=self.max_output_tokens,
                 ),
@@ -160,6 +171,8 @@ class GeminiClient(LLMClient):
             raw_text = response.text
             return raw_text
         except Exception as exc:
+            if "429" in str(exc) or "quota" in str(exc).lower() or "limit" in str(exc).lower():
+                self._rotate_key()
             error_msg = str(exc)
             raise
         finally:
@@ -171,7 +184,7 @@ class GeminiClient(LLMClient):
                 latency=latency,
                 error=error_msg,
                 has_pdf=False,
-                response=response if error_msg is None else None,
+                response=response,
             )
 
     def _log_call(
@@ -187,16 +200,18 @@ class GeminiClient(LLMClient):
         """Log an LLM call if a logger is attached."""
         if self.logger is None:
             return
-
         input_tokens, output_tokens = 0, 0
         if response is not None:
             try:
                 usage = response.usage_metadata
-                input_tokens = getattr(usage, "prompt_token_count", 0) or 0
-                output_tokens = getattr(usage, "candidates_token_count", 0) or 0
+                input_tokens = (
+                    getattr(usage, "prompt_token_count", 0) or 0
+                )
+                output_tokens = (
+                    getattr(usage, "candidates_token_count", 0) or 0
+                )
             except Exception:
                 pass
-
         self.logger.log(
             call_type=call_type,
             provider=self.provider,
@@ -377,3 +392,58 @@ def _parse_json(text: str) -> dict:
             pass
 
     raise ValueError(f"Could not parse JSON from LLM response: {text[:200]}")
+
+
+def _repair_truncated_json(raw: str) -> str:
+    """Close open brackets in a truncated JSON string."""
+    stack = []
+    in_string = False
+    escape_next = False
+
+    for i, char in enumerate(raw):
+        if escape_next:
+            escape_next = False
+            continue
+        if char == "\\" and in_string:
+            escape_next = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if char in "{[":
+            stack.append(char)
+        elif char in "}]":
+            if stack:
+                stack.pop()
+
+    result = raw.rstrip().rstrip(",")
+    for bracket in reversed(stack):
+        result += "}" if bracket == "{" else "]"
+    return result
+
+
+def _parse_json_safe(raw: str) -> dict:
+    """Parse JSON with truncation recovery fallback."""
+    # Clean markdown fencing
+    clean = re.sub(r"^```[a-zA-Z]*\n?", "", raw.strip())
+    clean = re.sub(r"\n?```$", "", clean).strip()
+
+    # Normal parse
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        pass
+
+    # Recovery parse
+    try:
+        repaired = _repair_truncated_json(clean)
+        result = json.loads(repaired)
+        print("  [WARN] JSON was truncated -- recovered partial result")
+        return result
+    except Exception:
+        pass
+
+    print("  [ERROR] JSON parsing failed completely")
+    return {}

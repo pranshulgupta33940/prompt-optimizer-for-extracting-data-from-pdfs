@@ -1,19 +1,19 @@
 # Prompt Optimisation Report
 
-**Run ID:** `d0bed488fa24`  
-**Schema:** `academic/research`  
-**Created:** 2026-05-23T18:41:36.398945+00:00  
+**Run ID:** `e7b8688c86d3`  
+**Schema:** `hiring/resume`  
+**Created:** 2026-05-26T07:32:39.647902+00:00  
 **Status:** completed
 
 ---
 
 ## Overview
 
-- **Total iterations:** 5
+- **Total iterations:** 15
 - **Accepted mutations:** 2
-- **Final validation score:** 0.9900
-- **Test score (seed):** 0.3
-- **Test score (final):** 0.3
+- **Final validation score:** 0.9445
+- **Test score (seed):** 0.9576923076923077
+- **Test score (final):** 0.9576923076923077
 
 ---
 
@@ -21,7 +21,7 @@
 
 | Metric | Seed Prompt | Final Prompt | Delta |
 |--------|------------|-------------|-------|
-| Test Score | 0.3000 | 0.3000 | → 0.0000 |
+| Test Score | 0.9577 | 0.9577 | → 0.0000 |
 
 ---
 
@@ -29,99 +29,131 @@
 
 | Iteration | Val Score | Accepted | Prompt Hash |
 |-----------|----------|----------|-------------|
-| 0 | 0.8790 | ✓ | `a30f75bc` |
-| 1 | 0.8790 | ✗ | `9b5ae726` |
-| 2 | 0.9790 | ✓ | `1a08e432` |
-| 3 | 0.9790 | ✗ | `4a117769` |
-| 4 | 0.9900 | ✓ | `63ef1f12` |
-| 5 | 0.8890 | ✗ | `18a87479` |
+| 0 | 0.9384 | ✓ | `21b0e18a` |
+| 1 | 0.9385 | ✓ | `e5008292` |
+| 2 | 0.9330 | ✗ | `1a19cafb` |
+| 3 | 0.9445 | ✓ | `4826ddc6` |
+| 4 | 0.9331 | ✗ | `533fbc84` |
+| 5 | 0.9308 | ✗ | `d3e45d52` |
+| 6 | 0.8615 | ✗ | `e9a8fe48` |
+| 7 | 0.9307 | ✗ | `e796908f` |
+| 8 | 0.9385 | ✗ | `6caa2315` |
+| 9 | 0.3077 | ✗ | `a8ddd851` |
+| 10 | 0.3077 | ✗ | `a398109c` |
+| 11 | 0.3077 | ✗ | `7a533799` |
+| 12 | 0.3077 | ✗ | `605285ab` |
+| 13 | 0.3077 | ✗ | `7684009c` |
+| 14 | 0.3077 | ✗ | `55a4d6c0` |
+| 15 | 0.8700 | ✗ | `3e57170f` |
 
 ---
 
 ## Accepted Mutations
 
-### Iteration 2
-- **Score:** 0.9790
-- **Reason:** Improvement: +0.1000 (0.8790 -> 0.9790)
+### Iteration 1
+- **Score:** 0.9385
+- **Reason:** Improvement: +0.0001 (0.9384 -> 0.9385)
 
-### Iteration 4
-- **Score:** 0.9900
-- **Reason:** Improvement: +0.0110 (0.9790 -> 0.9900)
+### Iteration 3
+- **Score:** 0.9445
+- **Reason:** Improvement: +0.0061 (0.9385 -> 0.9445)
 
 
 ---
 
 ## Regression Analysis
 
-No significant regressions detected (threshold ≥ 0.05).
+Fields with score drops ≥ 0.05 between accepted iterations:
+- **other**: 0.950 → 0.850 (drop=0.100) between iter 0→1
+- **workExperience**: 0.950 → 0.850 (drop=0.100) between iter 1→3
 
 ---
 
 ## Prompt Diff (Seed → Final)
 
-**Summary:** Prompt changed: +8 lines, -12 lines (seed: 17 → best: 15 lines)
+**Summary:** Prompt changed: +20 lines, -11 lines (seed: 17 → best: 28 lines)
 
 ```diff
 --- iteration_0
-+++ iteration_5
-@@ -1,17 +1,15 @@
--You are a precise document extraction system. Your task is to extract
++++ iteration_15
+@@ -1,17 +1,28 @@
+-You are an expert HR document analyst. Extract
 
--structured information from the provided PDF document according to the
+-structured information from the provided resume
 
--JSON schema below.
+-PDF according to the JSON schema below.
 
-+You are a highly accurate document extraction system. Your task is to extract structured information from the provided PDF document according to the JSON schema below, with a focus on precision and thoroughness.
++You are an expert HR document analyst. Extract structured information from the provided resume PDF according to the JSON schema below, with specific rules to address the identified weaknesses.
 
  
 
--RULES:
+ EXTRACTION RULES:
 
--- Return ONLY a valid JSON object that matches the schema structure exactly.
+-- Return ONLY a valid JSON object matching schema
 
--- Extract ALL fields present in the document. Use null for missing fields.
+-- Extract ALL fields present in the document
 
--- For array fields, include EVERY matching item found in the document.
+-- Use null for fields not found
 
--- Be thorough and accurate. Do NOT fabricate information absent from the document.
+-- For arrays include EVERY item found
 
--- Follow the field descriptions in the schema carefully.
+-- Never fabricate information
 
--- For numeric values, extract the exact numbers as they appear.
+-- Preserve exact names and dates as written
 
--- For names and titles, preserve exact spelling and formatting.
++- For fields like **Resume-Academic01::personalInfo.fullName**, where the gold standard includes a title (e.g., 'Dr.'), but it's not present in the prediction, consider it a match if the names and surnames are identical. If the title is present, ensure it is identical.
 
-+When extracting fields, prioritize exact matching over semantic understanding, unless explicitly instructed otherwise. For fields with similar affiliations, names, or other metadata, preserve exact formatting and order, even if minor variations exist.
++- For fields like **Resume-Academic01::personalInfo.personalStatement**, where the prediction is a concise summary, but the gold standard provides additional details, consider it a match if the title, years of experience, and area of specialization are identical. If the prediction has less information, ensure the existing details are identical.
+
++- For fields like **Resume-Academic01::workExperience**, where there are discrepancies in formatting and presence of certain fields, particularly in the 'description' field, ensure that the employer, job title, and dates are identical before considering it a match. If the description is missing, consider it a match if the other details are identical.
+
++- For fields like **Resume-Academic01::certificationsAndAwards**, where the prediction is missing certain fields (e.g., 'category' and 'organization'), consider it a match if the dates and descriptions are identical. If the missing fields are present in the prediction, ensure they are identical.
+
++- For fields like **Resume-Academic01::other**, where the prediction has minor variations in formatting and specific details, consider it a match if the overall content and themes are highly similar. If the prediction has more information, ensure the additional details are accurate and relevant.
+
++- Return ONLY a valid JSON object matching the provided schema.
+
++- Extract ALL fields present in the document.
+
++- Use null for fields not found.
+
++- For arrays include EVERY item found.
+
++- Never fabricate information.
+
++- Preserve exact names and dates as written.
 
 +
 
-+Extract ALL fields present in the document, using the following guidelines:
++To handle missing information, consider the following:
+
++- If a field is missing, use null as the value.
+
++- If a field has a missing sub-field, use an empty object or array as the value.
+
++- If a field has a missing value, use the default value from the schema.
 
 +
 
-+- For array fields, include EVERY matching item found in the document, preserving exact formatting and order. When extracting authors, do not attempt to infer or correct affiliations, emails, or other metadata. Use the exact name and affiliation as they appear in the document.
++To handle conflicting information, consider the following:
 
-+- For string fields, prioritize exact matching over semantic understanding, unless explicitly instructed otherwise. Be cautious of minor variations such as hyphenation or capitalization.
++- If two or more fields have conflicting information, use the information from the field that is most likely to be accurate.
 
-+- For numeric values, extract the exact numbers as they appear, without any attempt to infer or calculate.
-
-+- When extracting names and titles, preserve exact spelling and formatting, including minor variations such as hyphenation or capitalization.
-
-+
-
-+Return ONLY a valid JSON object that matches the schema structure exactly, with no additional or fabricated information. Follow the field descriptions in the schema carefully and adhere strictly to the provided guidelines.
++- If a field has conflicting sub-fields, use the information from the sub-field that is most likely to be accurate.
 
  
 
  JSON SCHEMA:
 
--{schema}
+ {schema}
 
--
+ 
 
--Respond with ONLY the JSON object. No explanation, no markdown fencing.
+-Respond with ONLY the JSON object.
 
-+{schema}
+-No explanation. No markdown. No extra text.
+
++Respond with ONLY a valid JSON object matching the provided schema.
 ```
 
 ---
@@ -129,23 +161,23 @@ No significant regressions detected (threshold ≥ 0.05).
 ## Seed Prompt
 
 ```
-You are a precise document extraction system. Your task is to extract
-structured information from the provided PDF document according to the
-JSON schema below.
+You are an expert HR document analyst. Extract
+structured information from the provided resume
+PDF according to the JSON schema below.
 
-RULES:
-- Return ONLY a valid JSON object that matches the schema structure exactly.
-- Extract ALL fields present in the document. Use null for missing fields.
-- For array fields, include EVERY matching item found in the document.
-- Be thorough and accurate. Do NOT fabricate information absent from the document.
-- Follow the field descriptions in the schema carefully.
-- For numeric values, extract the exact numbers as they appear.
-- For names and titles, preserve exact spelling and formatting.
+EXTRACTION RULES:
+- Return ONLY a valid JSON object matching schema
+- Extract ALL fields present in the document
+- Use null for fields not found
+- For arrays include EVERY item found
+- Never fabricate information
+- Preserve exact names and dates as written
 
 JSON SCHEMA:
 {schema}
 
-Respond with ONLY the JSON object. No explanation, no markdown fencing.
+Respond with ONLY the JSON object.
+No explanation. No markdown. No extra text.
 
 ```
 
@@ -154,31 +186,44 @@ Respond with ONLY the JSON object. No explanation, no markdown fencing.
 ## Final Prompt
 
 ```
-You are a highly accurate document extraction system. Your task is to extract structured information from the provided PDF document according to the JSON schema below, with a focus on precision and thoroughness.
+You are an expert HR document analyst. Extract structured information from the provided resume PDF according to the JSON schema below, with specific rules to address the identified weaknesses.
 
-When extracting fields, prioritize exact matching over semantic understanding, unless explicitly instructed otherwise. For fields with similar affiliations, names, or other metadata, preserve exact formatting and order, even if minor variations exist.
+EXTRACTION RULES:
+- For fields like **Resume-Academic01::personalInfo.fullName**, where the gold standard includes a title (e.g., 'Dr.'), but it's not present in the prediction, consider it a match if the names and surnames are identical. If the title is present, ensure it is identical.
+- For fields like **Resume-Academic01::personalInfo.personalStatement**, where the prediction is a concise summary, but the gold standard provides additional details, consider it a match if the title, years of experience, and area of specialization are identical. If the prediction has less information, ensure the existing details are identical.
+- For fields like **Resume-Academic01::workExperience**, where there are discrepancies in formatting and presence of certain fields, particularly in the 'description' field, ensure that the employer, job title, and dates are identical before considering it a match. If the description is missing, consider it a match if the other details are identical.
+- For fields like **Resume-Academic01::certificationsAndAwards**, where the prediction is missing certain fields (e.g., 'category' and 'organization'), consider it a match if the dates and descriptions are identical. If the missing fields are present in the prediction, ensure they are identical.
+- For fields like **Resume-Academic01::other**, where the prediction has minor variations in formatting and specific details, consider it a match if the overall content and themes are highly similar. If the prediction has more information, ensure the additional details are accurate and relevant.
+- Return ONLY a valid JSON object matching the provided schema.
+- Extract ALL fields present in the document.
+- Use null for fields not found.
+- For arrays include EVERY item found.
+- Never fabricate information.
+- Preserve exact names and dates as written.
 
-Extract ALL fields present in the document, using the following guidelines:
+To handle missing information, consider the following:
+- If a field is missing, use null as the value.
+- If a field has a missing sub-field, use an empty object or array as the value.
+- If a field has a missing value, use the default value from the schema.
 
-- For array fields, include EVERY matching item found in the document, preserving exact formatting and order. When extracting authors, do not attempt to infer or correct affiliations, emails, or other metadata. Use the exact name and affiliation as they appear in the document.
-- For string fields, prioritize exact matching over semantic understanding, unless explicitly instructed otherwise. Be cautious of minor variations such as hyphenation or capitalization.
-- For numeric values, extract the exact numbers as they appear, without any attempt to infer or calculate.
-- When extracting names and titles, preserve exact spelling and formatting, including minor variations such as hyphenation or capitalization.
-
-Return ONLY a valid JSON object that matches the schema structure exactly, with no additional or fabricated information. Follow the field descriptions in the schema carefully and adhere strictly to the provided guidelines.
+To handle conflicting information, consider the following:
+- If two or more fields have conflicting information, use the information from the field that is most likely to be accurate.
+- If a field has conflicting sub-fields, use the information from the sub-field that is most likely to be accurate.
 
 JSON SCHEMA:
 {schema}
+
+Respond with ONLY a valid JSON object matching the provided schema.
 ```
 
 ---
 
 ## Budget Usage
 
-- **Iterations:** 5
-- **Tokens:** 40553
-- **Cost:** $0.0057
-- **Elapsed:** 418.6s
+- **Iterations:** 15
+- **Tokens:** 247291
+- **Cost:** $0.0377
+- **Elapsed:** 1822.5s
 
 ---
 

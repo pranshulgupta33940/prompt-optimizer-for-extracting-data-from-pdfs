@@ -57,24 +57,38 @@ class PromptMutator:
 
     @staticmethod
     def _build_system_prompt(diversify: bool) -> str:
-        """System prompt for the mutation LLM."""
         base = (
-            "You are a prompt-engineering expert. Your job is to improve "
-            "an extraction prompt so that a separate LLM produces more "
-            "accurate JSON when reading PDF documents.\n\n"
-            "RULES:\n"
-            "- Return ONLY the improved prompt text inside <PROMPT> tags.\n"
-            "- The prompt MUST contain the {schema} placeholder.\n"
-            "- Keep the prompt concise but complete.\n"
-            "- Focus on the weakest fields identified in the score report.\n"
+            "You are an expert prompt engineer specializing in "
+            "structured JSON extraction from PDF documents.\n\n"
+            "YOUR PRIMARY GOAL:\n"
+            "Write prompts that generalize across ALL documents "
+            "of this type. Every rule must apply broadly to any "
+            "document in this category -- not just the one whose "
+            "scores you are seeing.\n\n"
+            "MUTATION STRATEGIES:\n"
+            "1. Add field-specific rules for failing fields\n"
+            "2. Add explicit null/missing value handling\n"
+            "3. Add edge case rules for formatting variations\n"
+            "4. Clarify ambiguous field definitions from schema\n"
+            "5. Add output format enforcement\n"
+            "6. Add instructions for tables, lists, headers\n"
+            "7. Specify how to handle conflicting information\n\n"
+            "STRICT RULES:\n"
+            "- Return ONLY improved prompt inside <PROMPT> tags\n"
+            "- Prompt MUST contain {schema} placeholder\n"
+            "- Only change what is failing, keep what works\n"
+            "- Every instruction must work on unseen documents\n"
+            "- Never reference specific document content\n"
+            "- Keep prompt under 500 words\n"
         )
         if diversify:
             base += (
-                "\nDIVERSIFICATION MODE: The last several mutations did NOT "
-                "improve scores. You MUST try a fundamentally different "
-                "approach — restructure the prompt, change the extraction "
-                "strategy, add different examples, or rephrase instructions "
-                "entirely. Do NOT make small tweaks.\n"
+                "\nDIVERSIFICATION MODE:\n"
+                "Small mutations failed repeatedly. Try ONE of:\n"
+                "- Add a concrete extraction example\n"
+                "- Switch from bullets to numbered steps\n"
+                "- Add chain-of-thought: think before extracting\n"
+                "- Restructure the entire prompt from scratch\n"
             )
         return base
 
@@ -120,6 +134,22 @@ class PromptMutator:
         if history_text:
             parts.append("## Recent Mutation History")
             parts.append(history_text)
+            parts.append("")
+
+        if scoring.aggregate_score < 0.7:
+            parts.append("## Suggested Improvement Direction")
+            parts.append(
+                "Score is below 0.7 — the prompt needs significant "
+                "improvement. Consider adding a concrete example like:\n"
+                "```\n"
+                "EXAMPLE:\n"
+                "Document text: 'John Smith, PhD. Harvard University. 2023.'\n"
+                "Correct extraction: {\"author\": \"John Smith\", "
+                "\"degree\": \"PhD\", \"institution\": \"Harvard University\","
+                " \"year\": 2023}\n"
+                "```\n"
+                "Adapt the example to match the actual schema fields."
+            )
             parts.append("")
 
         parts.append(
