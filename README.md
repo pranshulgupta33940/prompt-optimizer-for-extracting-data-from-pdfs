@@ -271,7 +271,7 @@ near-zero cost pipeline testing.
 
 | Metric | Seed | Final | Delta |
 |--------|------|-------|-------|
-| Val Score | 0.9384 | 0.9445 | +0.0061 ✅ |
+| Val Score | 0.9384 | 0.9445 | +0.0061 |
 | Test Score | 0.9577 | 0.9577 | 0.000 |
 
 - 2 mutations accepted out of 15 iterations
