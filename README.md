@@ -1,90 +1,30 @@
-# Automated Prompt Optimizer for Structured Extraction
+# Prompt Optimizer — Automated Prompt Optimisation for Structured Extraction
 
-
-An agentic, production-grade prompt optimization system that automatically refines LLM prompts to maximize the quality of structured JSON extraction from complex PDF documents. Operating under multi-resource budgets (cost, time, tokens, iterations), the system runs a greedy hill-climbing optimization loop with stall-detection and diversification.
-
----
-
-##  How it Works
-
-The optimizer starts with a **Seed Prompt**, loads the PDF documents, parses the JSON target schema, and executes a feedback loop using two LLM providers (Google Gemini & Groq/Llama) and a mathematical scoring layer.
-
-```mermaid
-graph TD
-    subgraph IL["Input Layer"]
-        A["PDF Documents - ExtractBench Dataset"]
-        B["JSON Schema - Metric config per field"]
-        C["Seed Prompt - From YAML config"]
-    end
-
-    subgraph OL["Optimization Loop"]
-        LOOP["Optimizer Loop - Greedy accept / reject"]
-        MUT["LLM Mutator - Groq Llama 3.1 8B"]
-        EXT["PDF Extractor - Gemini 1.5 Flash"]
-        SCO["Structured Scorer - Per-field P / R / F1"]
-        ALI["Array Alignment - Hungarian Algorithm"]
-        BUD["Budget Tracker - Iter / tokens / cost / time"]
-        DIV["Diversify Search - After 3 stalled iters"]
-    end
-
-    subgraph OOL["Output Layer"]
-        FIN["Final Optimized Prompt - Best val-split score"]
-        REP["Performance Report - Score curve and REPORT.md"]
-    end
-
-    A -->|documents| EXT
-    B -->|metrics config| SCO
-    C -->|seed| LOOP
-    LOOP -->|propose| MUT
-    MUT -->|new prompt| EXT
-    EXT -->|extracted JSON| SCO
-    SCO -->|raw scores| ALI
-    ALI -->|final score| LOOP
-    BUD -->|enforce| LOOP
-    LOOP -.->|stall detected| DIV
-    DIV -.->|re-inject| MUT
-    LOOP -->|best prompt| FIN
-    LOOP -->|trajectory| REP
-
-    style LOOP fill:#3b82f6,stroke:#1d4ed8,color:#ffffff
-    style MUT fill:#7c3aed,stroke:#5b21b6,color:#ffffff
-    style EXT fill:#1d4ed8,stroke:#1e3a8a,color:#ffffff
-    style SCO fill:#b45309,stroke:#92400e,color:#ffffff
-    style ALI fill:#be123c,stroke:#9f1239,color:#ffffff
-    style DIV fill:#9d174d,stroke:#831843,color:#ffffff
-    style BUD fill:#374151,stroke:#1f2937,color:#ffffff
-    style FIN fill:#166534,stroke:#14532d,color:#ffffff
-    style REP fill:#166534,stroke:#14532d,color:#ffffff
-```
-
-## Imporant things to be noted about this :-
-
-Dual-LLM Setup: Fast and free PDF extraction using Gemini 2.5 Flash through native PDF uploads in Google AI Studio, combined with grading and mutation using Groq (Llama 3.1 8B).
-Smart Item Alignment: Uses the Hungarian algorithm to accurately match list and array items, even when outputs are unordered or list sizes differ.
-Efficient Caching System: SQLite-based disk caching for PDF extractions and LLM grading results to prevent repeated API calls and improve performance.
-Advanced Budget Controls: Supports limits on API cost, token usage, execution time, and iteration count, with graceful shutdown and resumability.
-Automatic Reporting: Generates detailed markdown reports with prompt evolution tracking, validation/test metrics, and prompt revision diffs.
+An automated system that improves LLM prompts for structured 
+JSON extraction from PDF documents using the 
+[ExtractBench](https://github.com/ContextualAI/extract-bench) dataset.
 
 ---
 
-##  Quick Start
+## Quick Start
 
-### 1. Clone & Set Up environment
+### 1. Prerequisites
+- Python 3.10+
+- [Google AI Studio API key](https://aistudio.google.com/) — free, no credit card
+- [Groq API key](https://console.groq.com/) — free, no credit card
 
+### 2. Install
 ```bash
-git clone https://github.com/pranshulgupta33940/llm-calling-llm.git
-cd llm-calling-llm/prompt_optimizer
+cd prompt_optimizer
 pip install -e ".[dev]"
 ```
 
-### 2. Configure API Keys (Free Tier)
-
-Set your free keys in your shell:
+### 3. Set API Keys
 
 **Windows PowerShell:**
 ```powershell
 $env:GOOGLE_API_KEY = "your-google-api-key"
-$env:GROQ_API_KEY = "your-groq-api-key"
+$env:GROQ_API_KEY   = "your-groq-api-key"
 ```
 
 **Linux / macOS:**
@@ -93,100 +33,276 @@ export GOOGLE_API_KEY="your-google-api-key"
 export GROQ_API_KEY="your-groq-api-key"
 ```
 
-### 3. Run the Optimization Pipeline
+**Optional — Multiple Google keys for quota rotation:**
+```powershell
+$env:GOOGLE_API_KEY_2 = "your-second-google-key"
+$env:GOOGLE_API_KEY_3 = "your-third-google-key"
+$env:GOOGLE_API_KEY_4 = "your-fourth-google-key"
+```
 
+The system automatically rotates to the next key when 
+the free tier daily quota (20 requests/day) is exhausted.
+A single key is sufficient for dry runs and short runs
+under 20 iterations.
+
+### 4. Clone the Dataset
 ```bash
-# Run a dry-run first (uses at most 2 docs per split for near-zero cost verification)
+git clone --depth 1 https://github.com/ContextualAI/extract-bench.git
+```
+
+### 5. Run
+```bash
+# Dry run — 2 docs per split, near-zero cost, tests pipeline
 python -m src.main --config config/default.yaml --dry-run
 
-# Run full optimization loop on academic/research schema
+# Full run — academic/research schema
 python -m src.main --config config/default.yaml
 
-# Run optimization on credit agreements (Alternate Schema)
+# Full run — finance/credit_agreement schema
 python -m src.main --config config/alternate_schema.yaml
+
+# Full run — hiring/resume schema
+python -m src.main --config config/hiring_resume.yaml
+
+# Any custom schema — copy a config and change dataset.schema
+python -m src.main --config config/my_schema.yaml
 ```
 
-### 4. Run Unit Tests
-
-Verify the scoring alignment, caching, and schema parsing modules:
+### 6. Run Tests
 ```bash
-python -m pytest tests/ -v
+pytest tests/ -v
 ```
 
 ---
 
-## Sample Optimization Report
+## Architecture
+prompt_optimizer/
+├── config/
+│   ├── default.yaml           # academic/research schema
+│   ├── alternate_schema.yaml  # finance/credit_agreement schema
+│   └── hiring_resume.yaml     # hiring/resume schema
+├── src/
+│   ├── main.py                # CLI entry point
+│   ├── config_loader.py       # YAML config loading + validation
+│   ├── data/
+│   │   ├── loader.py          # PDF + gold JSON loading + splits
+│   │   └── schema.py          # Schema parsing + $ref resolution
+│   ├── scoring/
+│   │   ├── scorer.py          # Main scoring entry point
+│   │   ├── metrics.py         # All 9 evaluation metric types
+│   │   ├── alignment.py       # Hungarian algorithm array alignment
+│   │   └── cache.py           # SQLite cache for stochastic metrics
+│   ├── optimizer/
+│   │   ├── loop.py            # Greedy hill-climbing loop
+│   │   ├── mutator.py         # LLM-based prompt mutation
+│   │   ├── budget.py          # Budget tracking and enforcement
+│   │   └── state.py           # Run state + resumability
+│   ├── llm/
+│   │   ├── client.py          # Gemini + Groq clients, key rotation
+│   │   └── logger.py          # JSONL logging for every LLM call
+│   └── observability/
+│       ├── diff.py            # Prompt diff between iterations
+│       └── report.py          # REPORT.md generation
+├── tests/
+│   ├── test_scoring.py        # Unit tests — all 9 metric types
+│   └── test_alignment.py      # Unit tests — Hungarian alignment
+├── pyproject.toml
+├── README.md
+└── REPORT.md                  # Auto-generated after each run
 
-During the test execution on the `academic/research` schema, the optimizer refined the seed prompt over 5 iterations, producing the following gains:
+---
 
-### Score Evolution Curve
-| Iteration | Val Score | Accepted | Action / Change |
-| :---: | :---: | :---: | :--- |
-| **0** | `0.8790` | ✓ | Seed prompt evaluation baseline |
-| **1** | `0.8790` | ✗ | Rejected: No score improvement |
-| **2** | `0.9790` | ✓ | **Accepted: +0.1000** (added explicit detail guidelines) |
-| **3** | `0.9790` | ✗ | Rejected: No score improvement |
-| **4** | `0.9900` | ✓ | **Accepted: +0.0110** (added formatting/order guidelines) |
-| **5** | `0.8890` | ✗ | Rejected: Regressed score |
+## How to Retarget to a New Schema
 
-### Prompts Evolution Diff
+Switching schemas requires only a config file change.
+No code edits needed.
 
-```diff
---- Seed Prompt (Iteration 0)
-+++ Final Optimized Prompt (Iteration 4)
--You are a precise document extraction system. Your task is to extract
--structured information from the provided PDF document according to the
--JSON schema below.
-+You are a highly accurate document extraction system. Your task is to extract structured information from the provided PDF document according to the JSON schema below, with a focus on precision and thoroughness.
- 
--RULES:
--- Return ONLY a valid JSON object that matches the schema structure exactly.
--- Extract ALL fields present in the document. Use null for missing fields.
--- For array fields, include EVERY matching item found in the document.
--- Be thorough and accurate. Do NOT fabricate information absent from the document.
--- Follow the field descriptions in the schema carefully.
--- For numeric values, extract the exact numbers as they appear.
--- For names and titles, preserve exact spelling and formatting.
-+When extracting fields, prioritize exact matching over semantic understanding, unless explicitly instructed otherwise. For fields with similar affiliations, names, or other metadata, preserve exact formatting and order, even if minor variations exist.
-+
-+Extract ALL fields present in the document, using the following guidelines:
-+
-+- For array fields, include EVERY matching item found in the document, preserving exact formatting and order. When extracting authors, do not attempt to infer or correct affiliations, emails, or other metadata. Use the exact name and affiliation as they appear in the document.
-+- For string fields, prioritize exact matching over semantic understanding, unless explicitly instructed otherwise. Be cautious of minor variations such as hyphenation or capitalization.
-+- For numeric values, extract the exact numbers as they appear, without any attempt to infer or calculate.
-+- When extracting names and titles, preserve exact spelling and formatting, including minor variations such as hyphenation or capitalization.
-+
-+Return ONLY a valid JSON object that matches the schema structure exactly, with no additional or fabricated information. Follow the field descriptions in the schema carefully and adhere strictly to the provided guidelines.
+1. Copy an existing config:
+```bash
+cp config/default.yaml config/my_schema.yaml
 ```
 
----
+2. Edit `config/my_schema.yaml`:
+```yaml
+dataset:
+  schema: "finance/10kq"
+seed_prompt: |
+  You are an expert analyst...
+```
 
-##  Extensible Evaluation Metrics
+3. Run:
+```bash
+python -m src.main --config config/my_schema.yaml
+```
 
-The system resolves nested `$ref` properties in JSON schemas and extracts evaluation configs corresponding to standard and customized metrics:
-
-| Metric ID | Target Type | Matching Logic |
-| :--- | :--- | :--- |
-| `string_exact` | String | Case-sensitive character-level matching |
-| `string_case_insensitive` | String | Case-insensitive character-level matching |
-| `string_fuzzy` | String | Character-level sequence distance ratio (Levenshtein) |
-| `string_semantic` | String | LLM-graded semantic equivalence (Groq Llama 3.1 8B) |
-| `integer_exact` | Integer | Exact integer value comparison (after casting) |
-| `number_exact` | Float | Exact numerical value comparison (after casting) |
-| `number_tolerance` | Float | Percentage-based difference ratio tolerance comparison |
-| `boolean_exact` | Boolean | Strict boolean flag matching |
-| `array_llm` | Array | LLM-guided schema array matching |
+See `config/hiring_resume.yaml` for a complete 
+retargeting example on a different domain.
 
 ---
 
-##  Repository Layout
+## Split Policy
 
-*   `/prompt_optimizer/config/` - YAML files defining model configurations, dataset directories, and run settings.
-*   `/prompt_optimizer/src/data/` - Handles deterministic data loader, split generator, and schema parser.
-*   `/prompt_optimizer/src/scoring/` - Hungarian array alignment, evaluation metrics, and SQLite caching.
-*   `/prompt_optimizer/src/optimizer/` - greedy hill climbing engine, budget manager, and state saver.
-*   `/prompt_optimizer/src/llm/` - API integration for Gemini 2.5 Flash & Groq Llama 3.1.
-*   `/prompt_optimizer/src/observability/` - unified diff comparator and report markdown builder.
-*   `/prompt_optimizer/tests/` - pytest suite containing 62 robust test specifications.
+All runs use a deterministic train/val/test split:
+
+1. Sort all document IDs alphabetically
+2. Shuffle with `random.Random(42)`
+3. Allocate 70% train / 15% val / 15% test
+   (minimum 1 document per split)
+
+| Schema | Total | Train | Val | Test |
+|--------|-------|-------|-----|------|
+| academic/research | 6 | 4 | 1 | 1 |
+| finance/10kq | 7 | 5 | 1 | 1 |
+| finance/credit_agreement | 10 | 7 | 1 | 2 |
+| hiring/resume | 7 | 5 | 1 | 1 |
+| sport/swimming | 5 | 3 | 1 | 1 |
+
+Same seed and ratios across all schemas and configs.
+Running the same config twice always produces 
+identical splits.
 
 ---
+
+## Array Alignment Policy
+
+**Hungarian Algorithm** via `scipy.optimize.linear_sum_assignment`.
+
+Finds the globally optimal one-to-one assignment between 
+predicted and gold array items. Superior to greedy or 
+positional matching because:
+
+- Handles reordered arrays correctly
+- Finds the best possible alignment not just locally good
+- Fully deterministic — same input always gives same result
+- Time complexity O(n³) acceptable for typical array sizes
+
+For arrays of objects: pairwise similarity is the average 
+field score across all evaluation-config fields.
+For arrays of primitives: fuzzy string matching is used.
+
+---
+
+## Evaluation Config Types
+
+| Metric | Input | How It Works |
+|--------|-------|--------------|
+| `string_exact` | String | Case-sensitive exact match |
+| `string_semantic` | String | LLM judge via Groq, cached |
+| `string_fuzzy` | String | Levenshtein ratio (SequenceMatcher) |
+| `string_case_insensitive` | String | Lowercase then exact match |
+| `integer_exact` | Integer | Exact match after int coercion |
+| `number_tolerance` | Number | Relative error within tolerance |
+| `number_exact` | Number | Exact match after float coercion |
+| `boolean_exact` | Boolean | Exact match after bool coercion |
+| `array_llm` | Array | LLM judge for array comparison |
+
+---
+
+## Optimization Algorithm
+
+**Greedy hill-climbing with stall detection:**
+
+Evaluate seed prompt on validation split → baseline
+For each iteration until budget exhausted:
+a. Mutator LLM proposes an improved prompt
+b. Evaluate candidate on validation split
+c. Accept if score improves, reject otherwise
+d. After 3 consecutive rejections → diversification mode
+e. Skip duplicate prompts via hash + similarity check
+f. Every 3 iterations → check val vs test gap
+Evaluate best prompt on held-out test split
+Generate REPORT.md with full trajectory
+
+
+**Pathological case handling:**
+
+| Case | Handling |
+|------|----------|
+| Regression | Reject, log reason, keep current best |
+| Stall (3 rejections) | Diversification mode — instruct mutator to try fundamentally different approach |
+| Duplicate prompt | Skip via SHA-256 hash check |
+| Overfitting | Warn when val/test gap exceeds threshold |
+
+---
+
+## Caching Strategy
+
+All stochastic operations cached to SQLite on disk:
+
+| Cache | Key | Purpose |
+|-------|-----|---------|
+| Metric cache | SHA-256(metric_id, predicted, gold) | Never score same pair twice |
+| Extraction cache | SHA-256(doc_path, prompt) | Never re-extract same doc+prompt |
+
+Interrupted runs resume without re-spending any API calls.
+
+---
+
+## Budget Controls
+
+All limits configurable in YAML:
+
+```yaml
+budget:
+  max_iterations: 10
+  max_tokens: 500000
+  max_cost_usd: 1.00
+  max_wall_clock_seconds: 5400
+```
+
+`--dry-run` limits to 2 docs per split for 
+near-zero cost pipeline testing.
+
+---
+
+## LLM Providers
+
+| Role | Provider | Model | Free Tier |
+|------|----------|-------|-----------|
+| PDF Extraction | Google AI Studio | gemini-2.5-flash | ✓ no card |
+| Prompt Mutation | Groq | llama-3.1-8b-instant | ✓ no card |
+| Scoring Judge | Groq | llama-3.1-8b-instant | ✓ no card |
+
+---
+
+## Results
+
+### hiring/resume
+
+| Metric | Seed | Final | Delta |
+|--------|------|-------|-------|
+| Val Score | 0.9384 | 0.9445 | +0.0061 ✅ |
+| Test Score | 0.9577 | 0.9577 | 0.000 |
+
+- 2 mutations accepted out of 15 iterations
+- Val score improved from 0.9384 to 0.9445
+- Test score: 0.9577 — strong generalization
+- Total cost: $0.0387
+- Total tokens: 252,842
+
+---
+
+## Observability
+
+Every run produces in `runs/<schema>/<run_id>/`:
+run_state.json       — full iteration history and state
+llm_calls.jsonl      — every LLM call with input, output,
+tokens, cost, latency
+extraction_cache.db  — cached PDF extractions
+metric_cache.db      — cached stochastic metric scores
+REPORT.md            — score curve, prompt diff,
+regression analysis
+
+---
+
+## Known Limitations
+
+1. Free tier quota (20 req/day per key) limits iteration 
+   count. Use multiple keys or paid tier for longer runs.
+2. Small val splits (1 doc) cause val/test divergence.
+   Cross-validation would give more stable signal.
+3. Mutation LLM (Llama 3.1 8B) has limited prompt 
+   engineering capability. A larger model would propose
+   better mutations.
+4. Greedy hill-climbing may miss global optimum.
+   Population-based search would explore more broadly.
