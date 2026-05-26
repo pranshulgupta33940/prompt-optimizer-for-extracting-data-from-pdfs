@@ -76,6 +76,7 @@ pytest tests/ -v
 ---
 
 ## Architecture
+```text
 prompt_optimizer/
 ├── config/
 │   ├── default.yaml           # academic/research schema
@@ -109,6 +110,7 @@ prompt_optimizer/
 ├── pyproject.toml
 ├── README.md
 └── REPORT.md                  # Auto-generated after each run
+```
 
 ---
 
