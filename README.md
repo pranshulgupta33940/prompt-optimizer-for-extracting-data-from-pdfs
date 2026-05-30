@@ -4,6 +4,8 @@ An automated system that improves LLM prompts for structured
 JSON extraction from PDF documents using the 
 [ExtractBench](https://github.com/ContextualAI/extract-bench) dataset.
 
+### 📹 [Video Walkthrough](https://youtu.be/GF8CESuNyY8)
+
 ---
 
 Video Explanation- (https://youtu.be/GF8CESuNyY8)
