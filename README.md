@@ -6,6 +6,7 @@ JSON extraction from PDF documents using the
 
 ---
 
+Video Explanation- (https://youtu.be/GF8CESuNyY8)
 ## Quick Start
 
 ### 1. Prerequisites
